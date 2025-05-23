@@ -34,19 +34,61 @@ def test_view(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_tasks(request):
-    tasks = Task.objects.filter(user=request.user)
+    tasks = Task.objects.filter(user=request.user).order_by('-created_at')
     serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data)
 
 
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# def create_task(request):
+#     serializer = TaskSerializer(data=request.data)
+#     if serializer.is_valid():
+#         serializer.save(user=request.user)  # ← Now using logged in user
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_task(request):
-    serializer = TaskSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save(user=request.user)  # ← Now using logged in user
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # Extract fields from request
+    title = request.data.get('title')
+    description = request.data.get('description','')
+    status_value = request.data.get('status', 'pending')  # Default fallback
+    priority = request.data.get('priority', 'medium')     # Default fallback
+    deadline = request.data.get('deadline')               # Format: "YYYY-MM-DD"
+
+    # Validate required field
+    if not title:
+        return Response({'error': 'Title is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Create the task
+    task = Task.objects.create(
+        user=request.user,
+        title=title,
+        description=description,
+        status=status_value,
+        priority=priority,
+        deadline=deadline
+    )
+
+    # Manual Response — matching your TaskSerializer
+    return Response({
+        "id": task.id,
+        "user": {
+            "id": request.user.id,
+            "username": request.user.username,
+            "email": request.user.email
+        },
+        "title": task.title,
+        "description": task.description,
+        "status": task.status,
+        "priority": task.priority,
+        "deadline": task.deadline,
+        "created_at": task.created_at,
+        "updated_at": task.updated_at
+    }, status=status.HTTP_201_CREATED)
+
+
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
