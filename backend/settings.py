@@ -79,12 +79,44 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+# db creds start 
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# ENV flag to detect environment
+ENVIRONMENT = os.environ.get('DJANGO_ENV', 'development')
+
+if ENVIRONMENT == 'production':
+    # Use RDS (or any other) DB for production
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ.get('RDS_DB_NAME'),
+            'USER': os.environ.get('RDS_DB_USER'),
+            'PASSWORD': os.environ.get('RDS_DB_PASSWORD'),
+            'HOST': os.environ.get('RDS_DB_HOST'),
+            'PORT': '3306',
+        }
     }
-}
+else:
+    # Local: use SQLite
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+# db creds end 
 
 
 # Password validation

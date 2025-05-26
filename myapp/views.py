@@ -47,6 +47,7 @@ def get_tasks(request):
 #         serializer.save(user=request.user)  # ← Now using logged in user
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
 #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_task(request):
