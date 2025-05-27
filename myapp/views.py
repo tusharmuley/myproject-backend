@@ -11,6 +11,8 @@ from django.http import JsonResponse
 from django.conf import settings
 import os
 
+from django.core.files.storage import default_storage
+
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import Task, Profile
@@ -38,6 +40,7 @@ class RegisterView(generics.CreateAPIView):
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
 def upload_profile_picture(request):
+    print("📦 Storage being used:", default_storage.__class__)
     if 'profile_picture' not in request.FILES:
         return Response({'error': 'No file uploaded'}, status=400)
 
