@@ -1,15 +1,19 @@
 # === views.py ===
 
 from django.shortcuts import render
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.serializers import ModelSerializer
 from django.contrib.auth.models import User
 from django.http import JsonResponse
+from django.conf import settings
+import os
 
-from .models import Task
+from rest_framework.parsers import MultiPartParser, FormParser
+
+from .models import Task, Profile
 from .serializers import TaskSerializer
 
 # Register Serializer & View
@@ -26,6 +30,63 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = [AllowAny]
     serializer_class = RegisterSerializer
+
+
+
+# for upload profile pichture 
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def upload_profile_picture(request):
+    if 'profile_picture' not in request.FILES:
+        return Response({'error': 'No file uploaded'}, status=400)
+
+    profile_picture = request.FILES['profile_picture']
+
+    if profile_picture.size > settings.MAX_FILE_SIZE_MB * 1024 * 1024:
+        return Response({'error': 'File too large (max 1MB allowed)'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        profile = Profile.objects.get(user=request.user)
+        # ✅ Delete old file if exists
+        if profile.profile_picture:
+            old_path = profile.profile_picture.path
+            if os.path.exists(old_path):
+                os.remove(old_path)
+    except Profile.DoesNotExist:
+        profile = Profile.objects.create(user=request.user)
+
+    profile.profile_picture = profile_picture
+    profile.save()
+
+    return Response({'message': 'Profile picture uploaded successfully'})
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_profile(request):
+    user = request.user
+    try:
+        profile = Profile.objects.get(user=user)
+        if profile.profile_picture:
+            filename = profile.profile_picture.name  # e.g., 'profile_pics/john.jpg'
+            profile_picture_url = request.build_absolute_uri(f'/media/{filename}')
+        else:
+            profile_picture_url = None
+    except Profile.DoesNotExist:
+        profile_picture_url = None
+
+    return Response({
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'profile_picture': profile_picture_url
+    })
+
+
+
 
 # Simple test view
 def test_view(request):
