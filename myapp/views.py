@@ -72,8 +72,7 @@ def get_user_profile(request):
     try:
         profile = Profile.objects.get(user=user)
         if profile.profile_picture:
-            filename = profile.profile_picture.name  # e.g., 'profile_pics/john.jpg'
-            profile_picture_url = request.build_absolute_uri(f'/media/{filename}')
+            profile_picture_url = profile.profile_picture.url  # ✅ REAL S3 URL
         else:
             profile_picture_url = None
     except Profile.DoesNotExist:
@@ -85,7 +84,6 @@ def get_user_profile(request):
         'email': user.email,
         'profile_picture': profile_picture_url
     })
-
 
 
 
