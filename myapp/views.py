@@ -40,7 +40,8 @@ class RegisterView(generics.CreateAPIView):
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
 def upload_profile_picture(request):
-    print("📦 Storage being used:", default_storage.__class__)
+    print("📦 Storage being used:", type(request.user))
+
     if 'profile_picture' not in request.FILES:
         return Response({'error': 'No file uploaded'}, status=400)
 
@@ -51,11 +52,9 @@ def upload_profile_picture(request):
 
     try:
         profile = Profile.objects.get(user=request.user)
-        # ✅ Delete old file if exists
         if profile.profile_picture:
-            old_path = profile.profile_picture.path
-            if os.path.exists(old_path):
-                os.remove(old_path)
+            # ✅ Correct way to delete on any storage backend (S3 or local)
+            profile.profile_picture.delete(save=False)
     except Profile.DoesNotExist:
         profile = Profile.objects.create(user=request.user)
 
@@ -63,7 +62,6 @@ def upload_profile_picture(request):
     profile.save()
 
     return Response({'message': 'Profile picture uploaded successfully'})
-
 
 
 
