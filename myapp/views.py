@@ -71,10 +71,22 @@ def get_user_profile(request):
     user = request.user
     try:
         profile = Profile.objects.get(user=user)
+        # if profile.profile_picture:
+        #     profile_picture_url = profile.profile_picture.url  # ✅ REAL S3 URL
+        # else:
+        #     profile_picture_url = None
         if profile.profile_picture:
-            profile_picture_url = profile.profile_picture.url  # ✅ REAL S3 URL
+            filename = profile.profile_picture.name  # 'profile_pics/filename.jpg'
+
+            # Agar production hai toh S3 url
+            if settings.ENVIRONMENT == 'production':
+                profile_picture_url = filename
+            else:
+                # Local me absolute uri with domain
+                profile_picture_url = request.build_absolute_uri(settings.MEDIA_URL + filename)
         else:
             profile_picture_url = None
+
     except Profile.DoesNotExist:
         profile_picture_url = None
 
