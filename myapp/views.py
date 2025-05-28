@@ -80,13 +80,13 @@ def get_user_profile(request):
 
             # Agar production hai toh S3 url
             if settings.ENVIRONMENT == 'production':
-                profile_picture_url = filename
+                profile_picture_url = f'https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{filename}'
             else:
                 # Local me absolute uri with domain
                 profile_picture_url = request.build_absolute_uri(settings.MEDIA_URL + filename)
         else:
             profile_picture_url = None
-
+            
     except Profile.DoesNotExist:
         profile_picture_url = None
 
