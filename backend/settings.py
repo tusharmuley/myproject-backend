@@ -163,7 +163,10 @@ if ENVIRONMENT == 'production':
                 "file_overwrite": False,
                 "default_acl": None,
             },
-        }
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
     }
 
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
