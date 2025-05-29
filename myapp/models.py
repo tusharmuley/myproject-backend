@@ -25,6 +25,8 @@ class Task(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     deadline = models.DateField(null=True, blank=True)
+    created_by = models.ForeignKey(User, related_name='tasks_created', on_delete=models.CASCADE, null=True, blank=True)
+    assigned_to = models.ForeignKey(User, related_name='tasks_assigned', on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

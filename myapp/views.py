@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.conf import settings
 import os
+from django.db.models import Q
 
 from django.core.files.storage import default_storage
 
@@ -103,12 +104,40 @@ def get_user_profile(request):
 def test_view(request):
     return JsonResponse({"message": "Hello from Django!"})
 
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_tasks(request):
-    tasks = Task.objects.filter(user=request.user).order_by('-created_at')
-    serializer = TaskSerializer(tasks, many=True)
-    return Response(serializer.data)
+    tasks = Task.objects.filter(
+         Q(assigned_to=request.user) | Q(created_by=request.user)
+    ).order_by('-created_at')
+
+    data = []
+    for task in tasks:
+        data.append({
+            'id': task.id,
+            'title': task.title,
+            'description': task.description,
+            'status': task.status,
+            'priority': task.priority,
+            'deadline': task.deadline,
+            'created_at': task.created_at,
+            'updated_at': task.updated_at,
+            'assigned_to': {
+                'id': task.assigned_to.id,
+                'username': task.assigned_to.username,
+                'email': task.assigned_to.email
+            } if task.assigned_to else None,
+            'created_by': {
+                'id': task.created_by.id,
+                'username': task.created_by.username,
+                'email': task.created_by.email
+            } if task.created_by else None
+        })
+
+    return Response(data)
+
 
 
 # @api_view(['POST'])
@@ -129,6 +158,14 @@ def create_task(request):
     status_value = request.data.get('status', 'pending')  # Default fallback
     priority = request.data.get('priority', 'medium')     # Default fallback
     deadline = request.data.get('deadline')               # Format: "YYYY-MM-DD"
+    assigned_to_id = request.data.get('assigned_to')               # Format: "YYYY-MM-DD"
+
+    assigned_user = None
+    if assigned_to_id:
+        try:
+            assigned_user = User.objects.get(id=assigned_to_id)
+        except User.DoesNotExist:
+            return Response({'error': 'Assigned user does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Validate required field
     if not title:
@@ -141,7 +178,9 @@ def create_task(request):
         description=description,
         status=status_value,
         priority=priority,
-        deadline=deadline
+        deadline=deadline,
+        assigned_to=assigned_user,
+        created_by=request.user
     )
 
     # Manual Response — matching your TaskSerializer
@@ -187,3 +226,33 @@ def delete_task(request, pk):
         return Response({'error': 'Task not found'}, status=404)
     task.delete()
     return Response({"message": "Task deleted"})
+
+
+
+@api_view(['get'])
+@permission_classes([IsAuthenticated])
+def getUsers(request):
+    search = request.GET.get('search', '')
+    users = User.objects.filter(username__istartswith=search)
+    
+    # Manually build list of user dicts
+    user_list = [{
+        'id': user.id,
+        'username': user.username,
+        'email': user.email
+    } for user in users]
+    
+    return JsonResponse(user_list, safe=False)
+
+
+
+
+
+
+
+
+
+
+
+
+

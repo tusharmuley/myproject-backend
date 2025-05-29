@@ -12,4 +12,5 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('upload-picture/', upload_profile_picture, name='upload-profile-picture'),
     path('profile/', get_user_profile, name='get_user_profile'),
+    path('getusers/', getUsers, name='getusers'),
 ]
